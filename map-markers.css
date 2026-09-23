@@ -1,0 +1,28 @@
+[data-gmp-crm-status] {
+  position: relative !important;
+  border-radius: 6px !important;
+  box-shadow: inset 5px 0 0 var(--gmp-crm-color, #64748b) !important;
+}
+
+[data-gmp-crm-status]::after {
+  content: attr(data-gmp-crm-label);
+  display: inline-flex;
+  align-items: center;
+  margin-left: 7px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--gmp-crm-color, #64748b);
+  font: 600 10px/1.4 Arial, sans-serif;
+  vertical-align: middle;
+  pointer-events: none;
+}
+
+[data-gmp-crm-map-marker] {
+  position: relative !important;
+  z-index: 2 !important;
+  border-radius: 999px !important;
+  outline: 4px solid color-mix(in srgb, var(--gmp-crm-color, #2563eb) 80%, white) !important;
+  outline-offset: 2px !important;
+  filter: drop-shadow(0 3px 5px rgba(15, 23, 42, .4)) !important;
+}

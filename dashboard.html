@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Mapa de Prospectos · Base comercial</title>
+    <link rel="stylesheet" href="dashboard.css">
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow">CRM PERSONAL PARA VENTA LOCAL</span>
+        <h1>Mapa de Prospectos</h1>
+        <p>Organiza lo que descubres en Google Maps y llévalo a Excel o Google Sheets cuando quieras.</p>
+      </div>
+      <div class="hero-actions">
+        <button class="button ghost" id="import-button">Importar</button>
+        <button class="button ghost" id="export-json">Respaldo JSON</button>
+        <button class="button light" id="export-csv">Exportar CSV</button>
+        <button class="button accent" id="new-record">+ Nuevo negocio</button>
+        <input id="file-input" type="file" accept=".csv,.txt,.json,text/csv,application/json" hidden>
+      </div>
+    </header>
+
+    <main>
+      <section class="stats" aria-label="Resumen comercial">
+        <article><span>Total</span><strong id="stat-total">0</strong></article>
+        <article><span>Por contactar</span><strong id="stat-contact">0</strong></article>
+        <article><span>En conversación</span><strong id="stat-active">0</strong></article>
+        <article><span>Clientes</span><strong id="stat-client">0</strong></article>
+      </section>
+
+      <section class="workspace">
+        <div class="toolbar">
+          <label class="search">
+            <span>⌕</span>
+            <input id="search" type="search" placeholder="Buscar negocio, teléfono, web, dirección o nota…">
+          </label>
+          <select id="status-filter" aria-label="Filtrar por estado">
+            <option value="">Todos los estados</option>
+          </select>
+          <select id="sort" aria-label="Ordenar">
+            <option value="updated-desc">Actualizados recientemente</option>
+            <option value="name-asc">Nombre A–Z</option>
+            <option value="status-asc">Estado</option>
+            <option value="created-desc">Agregados recientemente</option>
+          </select>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Negocio</th>
+                <th>Contacto</th>
+                <th>Estado</th>
+                <th>Último contacto</th>
+                <th>Actualizado</th>
+                <th aria-label="Acciones"></th>
+              </tr>
+            </thead>
+            <tbody id="records-body"></tbody>
+          </table>
+          <div class="empty" id="empty-state" hidden>
+            <div>📍</div>
+            <h2>Todavía no hay prospectos</h2>
+            <p>Activa la extensión en Google Maps, selecciona un negocio y guarda su ficha.</p>
+          </div>
+        </div>
+
+        <div class="table-footer">
+          <span id="result-count">0 registros</span>
+          <button class="text-danger" id="clear-all">Eliminar toda la base</button>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="editor">
+      <form method="dialog" id="editor-form">
+        <div class="modal-head">
+          <div>
+            <span class="eyebrow">FICHA COMERCIAL</span>
+            <h2 id="editor-title">Editar negocio</h2>
+          </div>
+          <button class="close" type="button" id="close-editor" aria-label="Cerrar">×</button>
+        </div>
+        <input type="hidden" name="id">
+        <div class="form-grid">
+          <label class="wide">Nombre del negocio<input name="name" required></label>
+          <label>Teléfono<input name="phone"></label>
+          <label>Página web<input name="website" type="url" placeholder="https://..."></label>
+          <label class="wide">Dirección<input name="address"></label>
+          <label>Estado<select name="status" id="editor-status"></select></label>
+          <label>Último contacto<input name="lastContact" type="date"></label>
+          <label class="wide">URL de Google Maps<input name="mapUrl" type="url"></label>
+          <label class="wide">Descripción / notas<textarea name="description" rows="5"></textarea></label>
+        </div>
+        <div class="modal-actions">
+          <button class="button subtle" type="button" id="cancel-editor">Cancelar</button>
+          <button class="button accent" type="submit">Guardar cambios</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+    <script src="dashboard.js"></script>
+  </body>
+</html>
