@@ -6,11 +6,15 @@ Los datos se guardan localmente mediante `chrome.storage.local`. No necesita ser
 
 ## Funciones incluidas
 
-- Activación y desactivación desde el icono de la extensión.
+- Activación automática al cargar Google Maps; al hacer clic en un negocio aparece su ficha sin depender del icono.
 - Detección de la ficha de negocio que esté abierta en Google Maps.
 - Captura automática, cuando Maps los expone, de nombre, dirección, teléfono, web, URL y coordenadas.
 - Estados con colores: sin revisar, pendiente, por contactar, contactado, interesado, cotización enviada, cliente, no interesado y no contactar.
-- Etiquetas de color sobre resultados visibles que ya estén guardados y resaltado del marcador cuando Maps expone su nombre accesible.
+- Marcadores propios con color e icono según el estado, además de etiquetas sobre los resultados visibles.
+- Anclaje preferente al marcador accesible de Google Maps; los marcadores proyectados se ocultan durante el arrastre o zoom y reaparecen recalculados al terminar.
+- Espera de estabilización: los puntos solo reaparecen cuando centro y zoom llevan un intervalo sin cambiar, evitando mostrar posiciones anteriores.
+- Umbral de zoom configurable para ocultar los puntos cuando se observa una ciudad completa.
+- Sincronización opcional del estado con listas nativas de Google Maps.
 - Panel flotante dentro de Google Maps.
 - Base completa en una pestaña propia, con búsqueda, filtros, estadísticas y edición manual.
 - Exportación CSV compatible con Excel y Google Sheets.
@@ -23,10 +27,10 @@ Los datos se guardan localmente mediante `chrome.storage.local`. No necesita ser
 2. Activa **Modo de desarrollador**.
 3. Pulsa **Cargar descomprimida**.
 4. Selecciona la carpeta `D:\git clonados\extension-mapa`.
-5. Si Opera GX muestra la extensión dentro del menú de extensiones, usa el icono de chincheta para dejarla visible en la barra.
-6. Abre o recarga Google Maps y pulsa el icono **Mapa de Prospectos Locales**.
+5. Abre o recarga Google Maps. La extensión se inicia automáticamente.
+6. Haz clic en un negocio: su ficha aparecerá sin necesidad de pulsar el icono. El icono de la extensión queda como forma alternativa de mostrar el panel.
 
-Opera GX está basado en Chromium y esta extensión usa exclusivamente APIs `chrome.*` compatibles: `action`, `tabs`, `runtime` y `storage`. No utiliza APIs exclusivas de Google Chrome, código remoto ni dependencias externas.
+Opera GX está basado en Chromium y esta extensión usa exclusivamente APIs `chrome.*` compatibles: `action`, `tabs`, `runtime` y `storage`. El permiso `tabs` está declarado explícitamente porque Opera lo exige para esas operaciones. No utiliza APIs exclusivas de Google Chrome, código remoto ni dependencias externas.
 
 ## Instalación alternativa en Google Chrome
 
@@ -37,12 +41,37 @@ Opera GX está basado en Chromium y esta extensión usa exclusivamente APIs `chr
 
 ## Uso diario
 
-1. Abre `https://www.google.com/maps`.
-2. Pulsa el icono de **Mapa de Prospectos Locales**. Aparecerá el panel flotante.
-3. Busca una categoría o zona y abre un negocio.
+1. Abre `https://www.google.com/maps` o la versión peruana `https://www.google.com.pe/maps`.
+2. Busca una categoría o zona y abre un negocio; el panel aparecerá automáticamente.
+3. Si ocultaste el panel, vuelve a hacer clic en un negocio o pulsa el icono de la extensión.
 4. Completa o corrige teléfono, web, estado y notas; luego pulsa **Guardar negocio**.
 5. Usa **Ver base** para consultar todos los registros.
 6. Pulsa **Exportar CSV** para analizar la base en Excel o subirla a Google Sheets.
+
+## Configurar listas nativas de Google Maps
+
+Google Maps no ofrece una API pública para administrar las listas guardadas. La extensión sincroniza el estado mediante el cuadro nativo **Guardar** de la ficha seleccionada. Antes de usarlo, crea estas listas una sola vez desde **Guardados → Nueva lista** y asigna el emoji indicado con **Elegir emoji**:
+
+- ⚪ `CRM · Sin revisar`
+- 🟡 `CRM · Pendiente`
+- 🟣 `CRM · Por contactar`
+- 🔵 `CRM · Contactado`
+- 🩵 `CRM · Interesado`
+- 🩷 `CRM · Cotización enviada`
+- 🟢 `CRM · Cliente`
+- 🔴 `CRM · No interesado`
+- ⚫ `CRM · No contactar`
+
+Los nombres deben coincidir, incluidos `CRM`, el punto central `·` y las mayúsculas. Al guardar una ficha con **Sincronizar el estado con una lista de Google Maps** activado, la extensión desmarca las demás listas CRM y marca la correspondiente al estado actual. Si Google cambia internamente el diálogo Guardar, el registro local seguirá guardándose y el panel mostrará que la sincronización de la lista no se pudo completar.
+
+## Ajustar visibilidad y movimiento
+
+En la página **Ver base** hay una franja llamada **Visibilidad del mapa**. Sus valores se guardan junto con la configuración de la extensión:
+
+- **Zoom mínimo:** los puntos solo se muestran cuando el zoom actual es igual o superior. El valor inicial es `15`, aproximadamente nivel de calles. Como referencia, Google considera `10` una vista de ciudad y `20` una vista de edificios.
+- **Espera al detenerse:** tiempo durante el cual centro y zoom deben permanecer estables antes de calcular y mostrar los puntos. El valor inicial es `700 ms`.
+
+Durante cualquier arrastre o cambio de zoom, tanto la capa proyectada como las insignias adheridas a marcadores de Google se ocultan inmediatamente. La extensión no reutiliza la posición anterior: espera la estabilidad configurada, calcula con la vista definitiva y después muestra los puntos.
 
 El CSV se guarda con codificación UTF-8 y encabezados en español. Si importas un archivo, la extensión intenta reconocer encabezados comunes en español e inglés. Los registros se combinan por ID o por la pareja nombre + dirección para reducir duplicados.
 
@@ -69,7 +98,8 @@ El CSV es el puente recomendado hacia Excel/Google Sheets:
 ## Limitaciones conocidas
 
 - Google Maps es una aplicación que cambia su estructura interna con frecuencia. La extensión usa varias señales y selectores alternativos, pero una actualización grande de Maps podría exigir ajustar `content.js`.
-- Las etiquetas y contornos de color aparecen sobre resultados o marcadores que estén cargados y que Google Maps exponga en el DOM. No son una capa geográfica independiente que pueda dibujar todos los puntos guardados a cualquier nivel de zoom.
+- Cuando Google Maps expone un marcador como elemento accesible, la insignia de estado se adhiere directamente a él. En los demás casos se usa una capa proyectada que se oculta mientras mueves o amplías el mapa y se recalcula al terminar. Los registros antiguos sin coordenadas solo pueden colorearse cuando Maps expone su marcador o resultado en pantalla.
+- La sincronización de listas depende de la interfaz de Google Maps y de que hayas iniciado sesión. No se activa sola: ocurre únicamente cuando pulsas **Guardar negocio** y mantienes marcada la opción de sincronización.
 - Una extensión sin la API oficial de Google Maps no puede recorrer automáticamente todos los negocios ni obtener datos que Google Maps no haya mostrado en la ficha seleccionada.
 - La versión inicial no sincroniza en tiempo real con Google Sheets. Hacerlo requeriría OAuth, permisos sobre una cuenta y una configuración de Google Cloud. Para uso personal, CSV/JSON es más simple y fácil de respaldar.
 - Si Google Maps ya estaba abierto durante la instalación o actualización de la extensión, recarga esa pestaña una vez.

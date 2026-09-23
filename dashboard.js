@@ -12,11 +12,28 @@ const STATUS = {
 };
 
 let records = [];
+let mapSettingsSaveTimer = null;
 const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (value = "") => value.toString().replace(/[&<>'"]/g, (character) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
 }[character]));
-const normalize = (value = "") => value.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+const stripArtifacts = (value = "") => value.toString()
+  .replace(/[\uE000-\uF8FF]/g, "")
+  .replace(/[\u200B-\u200D\u2060\uFEFF]/g, "")
+  .trim();
+const cleanText = (value = "") => stripArtifacts(value).replace(/\s+/g, " ").trim();
+const cleanPhone = (value = "") => cleanText(value)
+  .replace(/^(?:\+|00)\s*(?:51|57)(?:[\s().-]+|(?=\d))/i, "")
+  .trim();
+const normalize = (value = "") => cleanText(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+const sanitizeRecord = (record) => ({
+  ...record,
+  name: cleanText(record.name),
+  address: cleanText(record.address),
+  phone: cleanPhone(record.phone),
+  website: stripArtifacts(record.website),
+  description: stripArtifacts(record.description)
+});
 
 function initializeStatusOptions() {
   const filter = $("#status-filter");
@@ -28,12 +45,41 @@ function initializeStatusOptions() {
 }
 
 async function loadRecords() {
-  const result = await chrome.storage.local.get(STORAGE_KEY);
-  records = Array.isArray(result[STORAGE_KEY]) ? result[STORAGE_KEY] : [];
+  const result = await chrome.storage.local.get([STORAGE_KEY, "settings"]);
+  const stored = Array.isArray(result[STORAGE_KEY]) ? result[STORAGE_KEY] : [];
+  records = stored.map(sanitizeRecord);
+  $("#map-pin-min-zoom").value = Number.isFinite(Number(result.settings?.mapPinMinZoom)) ? Number(result.settings.mapPinMinZoom) : 15;
+  $("#map-settle-delay").value = Number.isFinite(Number(result.settings?.mapSettleDelay)) ? Number(result.settings.mapSettleDelay) : 700;
+  if (JSON.stringify(stored) !== JSON.stringify(records)) {
+    await chrome.storage.local.set({ [STORAGE_KEY]: records });
+  }
   render();
 }
 
+async function saveMapSettings() {
+  mapSettingsSaveTimer = null;
+  const zoom = Math.min(22, Math.max(10, Number($("#map-pin-min-zoom").value) || 15));
+  const delay = Math.min(3000, Math.max(200, Number($("#map-settle-delay").value) || 700));
+  $("#map-pin-min-zoom").value = zoom;
+  $("#map-settle-delay").value = delay;
+  const result = await chrome.storage.local.get("settings");
+  await chrome.storage.local.set({
+    settings: { ...(result.settings || {}), mapPinMinZoom: zoom, mapSettleDelay: delay }
+  });
+  const status = $("#map-settings-status");
+  status.textContent = "✓ Configuración guardada";
+  clearTimeout(saveMapSettings.noticeTimer);
+  saveMapSettings.noticeTimer = setTimeout(() => { status.textContent = "Guardado automáticamente"; }, 1800);
+}
+
+function scheduleMapSettingsSave() {
+  $("#map-settings-status").textContent = "Guardando…";
+  clearTimeout(mapSettingsSaveTimer);
+  mapSettingsSaveTimer = setTimeout(saveMapSettings, 350);
+}
+
 async function saveRecords() {
+  records = records.map(sanitizeRecord);
   await chrome.storage.local.set({ [STORAGE_KEY]: records });
   render();
 }
@@ -59,7 +105,7 @@ function formatDate(value, includeTime = false) {
   if (!value) return "—";
   const date = new Date(value.length === 10 ? `${value}T12:00:00` : value);
   if (Number.isNaN(date.valueOf())) return value;
-  return new Intl.DateTimeFormat("es-CO", includeTime
+  return new Intl.DateTimeFormat("es-PE", includeTime
     ? { dateStyle: "medium", timeStyle: "short" }
     : { dateStyle: "medium" }).format(date);
 }
@@ -193,7 +239,7 @@ function mergeImported(imported) {
   let updated = 0;
   for (const raw of imported) {
     const item = {
-      ...raw,
+      ...sanitizeRecord(raw),
       id: raw.id || crypto.randomUUID(),
       name: raw.name?.trim() || "",
       status: STATUS[raw.status] ? raw.status : "unreviewed",
@@ -231,14 +277,14 @@ $("#editor-form").addEventListener("submit", async (event) => {
   const record = {
     ...current,
     id: id || crypto.randomUUID(),
-    name: data.get("name").trim(),
-    phone: data.get("phone").trim(),
-    website: data.get("website").trim(),
-    address: data.get("address").trim(),
+    name: cleanText(data.get("name")),
+    phone: cleanPhone(data.get("phone")),
+    website: stripArtifacts(data.get("website")),
+    address: cleanText(data.get("address")),
     status: data.get("status"),
     lastContact: data.get("lastContact"),
-    mapUrl: data.get("mapUrl").trim(),
-    description: data.get("description").trim(),
+    mapUrl: stripArtifacts(data.get("mapUrl")),
+    description: stripArtifacts(data.get("description")),
     createdAt: current?.createdAt || now,
     updatedAt: now
   };
@@ -283,10 +329,19 @@ $("#clear-all").addEventListener("click", async () => {
   }
 });
 [$("#search"), $("#status-filter"), $("#sort")].forEach((element) => element.addEventListener("input", render));
+[$("#map-pin-min-zoom"), $("#map-settle-delay")].forEach((element) => element.addEventListener("input", scheduleMapSettingsSave));
 
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "local" && changes[STORAGE_KEY]) {
-    records = Array.isArray(changes[STORAGE_KEY].newValue) ? changes[STORAGE_KEY].newValue : [];
+  if (area !== "local") return;
+  if (changes.settings && !mapSettingsSaveTimer) {
+    const settings = changes.settings.newValue || {};
+    $("#map-pin-min-zoom").value = Number.isFinite(Number(settings.mapPinMinZoom)) ? Number(settings.mapPinMinZoom) : 15;
+    $("#map-settle-delay").value = Number.isFinite(Number(settings.mapSettleDelay)) ? Number(settings.mapSettleDelay) : 700;
+  }
+  if (changes[STORAGE_KEY]) {
+    records = Array.isArray(changes[STORAGE_KEY].newValue)
+      ? changes[STORAGE_KEY].newValue.map(sanitizeRecord)
+      : [];
     render();
   }
 });

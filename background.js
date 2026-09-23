@@ -15,18 +15,20 @@ chrome.runtime.onInstalled.addListener(async () => {
   }
 });
 
-chrome.action.onClicked.addListener(async (tab) => {
-  const isGoogleMaps = /^https:\/\/(?:www\.google\.(?:com|com\.co)|maps\.google\.com)\/maps(?:\/|$)/.test(tab.url || "");
+const toolbarAction = chrome.action || chrome.browserAction;
+
+toolbarAction?.onClicked.addListener((tab) => {
+  const isGoogleMaps = /^https:\/\/(?:www\.google\.(?:com|com\.co|com\.pe)|maps\.google\.(?:com|com\.co|com\.pe))\/maps(?:\/|$)/.test(tab.url || "");
   if (!tab.id || !isGoogleMaps) {
-    await chrome.tabs.create({ url: "https://www.google.com/maps" });
+    chrome.tabs.create({ url: "https://www.google.com/maps" });
     return;
   }
 
-  try {
-    await chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_CRM" });
-  } catch (error) {
-    console.warn("No se pudo activar el CRM en esta pestaña.", error);
-  }
+  chrome.tabs.sendMessage(tab.id, { type: "SHOW_CRM" }, () => {
+    if (chrome.runtime.lastError) {
+      chrome.tabs.reload(tab.id);
+    }
+  });
 });
 
 chrome.runtime.onMessage.addListener((message) => {

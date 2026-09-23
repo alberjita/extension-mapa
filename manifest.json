@@ -2,13 +2,16 @@
   "manifest_version": 3,
   "name": "Mapa de Prospectos Locales",
   "short_name": "Prospectos",
-  "version": "0.1.0",
-  "description": "CRM visual personal para registrar y clasificar negocios directamente en Google Maps.",
-  "permissions": ["storage"],
+  "version": "0.4.0",
+  "description": "CRM visual para Opera GX que registra y clasifica negocios directamente en Google Maps.",
+  "permissions": ["storage", "tabs"],
   "host_permissions": [
     "https://www.google.com/maps/*",
     "https://maps.google.com/*",
-    "https://www.google.com.co/maps/*"
+    "https://www.google.com.co/maps/*",
+    "https://maps.google.com.co/*",
+    "https://www.google.com.pe/maps/*",
+    "https://maps.google.com.pe/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -21,7 +24,10 @@
       "matches": [
         "https://www.google.com/maps/*",
         "https://maps.google.com/*",
-        "https://www.google.com.co/maps/*"
+        "https://www.google.com.co/maps/*",
+        "https://maps.google.com.co/*",
+        "https://www.google.com.pe/maps/*",
+        "https://maps.google.com.pe/*"
       ],
       "css": ["map-markers.css"],
       "js": ["content.js"],

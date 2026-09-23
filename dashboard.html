@@ -30,6 +30,21 @@
         <article><span>Clientes</span><strong id="stat-client">0</strong></article>
       </section>
 
+      <aside class="map-settings-card" aria-label="Configuración de marcadores">
+        <div class="settings-copy">
+          <span class="eyebrow">VISIBILIDAD DEL MAPA</span>
+          <strong>Cuándo mostrar los puntos</strong>
+          <p>Zoom 15 equivale aproximadamente a nivel de calles. Un valor mayor exige acercarse más.</p>
+        </div>
+        <label>Zoom mínimo
+          <input id="map-pin-min-zoom" type="number" min="10" max="22" step="0.5" value="15">
+        </label>
+        <label>Espera al detenerse
+          <div class="input-suffix"><input id="map-settle-delay" type="number" min="200" max="3000" step="100" value="700"><span>ms</span></div>
+        </label>
+        <span class="settings-status" id="map-settings-status">Guardado automáticamente</span>
+      </aside>
+
       <section class="workspace">
         <div class="toolbar">
           <label class="search">
@@ -87,7 +102,7 @@
         <input type="hidden" name="id">
         <div class="form-grid">
           <label class="wide">Nombre del negocio<input name="name" required></label>
-          <label>Teléfono<input name="phone"></label>
+          <label>Teléfono<input name="phone" placeholder="Número local, sin prefijo"></label>
           <label>Página web<input name="website" type="url" placeholder="https://..."></label>
           <label class="wide">Dirección<input name="address"></label>
           <label>Estado<select name="status" id="editor-status"></select></label>
